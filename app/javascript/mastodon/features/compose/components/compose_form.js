@@ -33,10 +33,6 @@ const messages = defineMessages({
 export default @injectIntl
 class ComposeForm extends ImmutablePureComponent {
 
-  setRef = c => {
-    this.composeForm = c;
-  };
-
   static contextTypes = {
     router: PropTypes.object,
   };
@@ -64,6 +60,7 @@ class ComposeForm extends ImmutablePureComponent {
     onPickEmoji: PropTypes.func.isRequired,
     showSearch: PropTypes.bool,
     anyMedia: PropTypes.bool,
+    singleColumn: PropTypes.bool,
   };
 
   static defaultProps = {
@@ -119,7 +116,12 @@ class ComposeForm extends ImmutablePureComponent {
   }
 
   handleFocus = () => {
-    this.composeForm.scrollIntoView();
+    if (this.composeForm && !this.props.singleColumn) {
+      const { left, right } = this.composeForm.getBoundingClientRect();
+      if (left < 0 || right > (window.innerWidth || document.documentElement.clientWidth)) {
+        this.composeForm.scrollIntoView();
+      }
+    }
   }
 
   componentDidUpdate (prevProps) {
@@ -163,6 +165,10 @@ class ComposeForm extends ImmutablePureComponent {
     this.spoilerText = c;
   }
 
+  setRef = c => {
+    this.composeForm = c;
+  };
+
   handleEmojiPick = (data) => {
     const { text }     = this.props;
     const position     = this.autosuggestTextarea.textarea.selectionStart;
@@ -185,12 +191,12 @@ class ComposeForm extends ImmutablePureComponent {
     }
 
     return (
-      <div className='compose-form' ref={this.setRef}>
+      <div className='compose-form'>
         <WarningContainer />
 
         <ReplyIndicatorContainer />
 
-        <div className={`spoiler-input ${this.props.spoiler ? 'spoiler-input--visible' : ''}`}>
+        <div className={`spoiler-input ${this.props.spoiler ? 'spoiler-input--visible' : ''}`} ref={this.setRef}>
           <AutosuggestInput
             placeholder={intl.formatMessage(messages.spoiler_placeholder)}
             value={this.props.spoilerText}
@@ -208,10 +214,6 @@ class ComposeForm extends ImmutablePureComponent {
           />
         </div>
 
-        <div className='emoji-picker-wrapper'>
-          <EmojiPickerDropdown onPickEmoji={this.handleEmojiPick} />
-        </div>
-
         <AutosuggestTextarea
           ref={this.setAutosuggestTextarea}
           placeholder={intl.formatMessage(messages.placeholder)}
@@ -227,6 +229,7 @@ class ComposeForm extends ImmutablePureComponent {
           onPaste={onPaste}
           autoFocus={!showSearch && !isMobile(window.innerWidth)}
         >
+          <EmojiPickerDropdown onPickEmoji={this.handleEmojiPick} />
           <div className='compose-form__modifiers'>
             <UploadFormContainer />
             <PollFormContainer />
